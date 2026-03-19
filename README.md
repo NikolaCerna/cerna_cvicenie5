@@ -8,7 +8,7 @@
 http://localhost:8000/api/notes
 ```
 
-![GET notes](images/get_note_index.png)
+![GET notes](images/get_notes_index.png)
 
 ---
 
@@ -38,16 +38,6 @@ http://localhost:8000/api/notes/2
 http://localhost:8000/api/notes
 ```
 
-**Body**
-
-```json
-{
-  "user_id": 2,
-  "title": "Moja prvá poznámka",
-  "body": "Toto je obsah poznámky."
-}
-```
-
 ![POST note](images/post_note_store.png)
 
 ---
@@ -63,19 +53,10 @@ http://localhost:8000/api/notes/{id}
 Príklad:
 
 ```
-http://localhost:8000/api/notes/4
+http://localhost:8000/api/notes/2
 ```
 
-**Body**
-
-```json
-{
-  "title": "Nový názov poznámky",
-  "body": "Toto je upravený obsah poznámky."
-}
-```
-
-![PUT note](images/put_note_update.png)
+![PUT note](images/patch_note_update.png)
 
 ---
 
@@ -90,14 +71,14 @@ http://localhost:8000/api/notes/{id}
 Príklad:
 
 ```
-http://localhost:8000/api/notes/4
+http://localhost:8000/api/notes/2
 ```
 
-![DELETE note](images/delete_note_destroy.png)
+![DELETE note](images/destroy_note_delete.png)
 
 ---
 
-# Vlastné endpointy
+# Ďalšie endpointy
 
 ## Vyhľadávanie poznámok
 
@@ -106,7 +87,7 @@ Vyhľadáva poznámky podľa textu v **title** alebo **body**.
 **URI**
 
 ```
-http://localhost:8000/api/notes-actions/search?q=Laravel
+http://localhost:8000/api/notes-actions/search?q=lara
 ```
 
 ![Search](images/get_note_search.png)
@@ -121,7 +102,7 @@ http://localhost:8000/api/notes-actions/search?q=Laravel
 http://localhost:8000/api/notes/stats/status
 ```
 
-![Stats](images/get_note_statsbystatus.png)
+![Stats](images/get_note_stats.png)
 
 ---
 
@@ -155,7 +136,7 @@ http://localhost:8000/api/users/2/notes
 
 ---
 
-## Vlastný endpoint – pinned notes
+## pinned notes
 
 Endpoint vracia všetky pripnuté poznámky (`is_pinned = true`).
 
@@ -165,8 +146,56 @@ Endpoint vracia všetky pripnuté poznámky (`is_pinned = true`).
 http://localhost:8000/api/notes/actions/pinned
 ```
 
-![Pinned notes](images/get_note_pinnednotes.png)
+![Pinned notes](images/get_note_ispinned.png)
 
+---
+
+## Publikovanie poznámky
+
+**URI**
+
+```
+http://localhost:8000/api/notes/{id}/publish
+```
+
+Príklad:
+
+```
+http://localhost:8000/api/notes/2/publish
+```
+![Published notes](images/patch_note_publish.png)
+---
+
+## Pripnutie poznámky
+
+**URI**
+
+```
+http://localhost:8000/api/notes/{id}/pin
+```
+
+Príklad:
+
+```
+http://localhost:8000/api/notes/2/pin
+```
+![Pin note](images/patch_note_pin.png)
+---
+
+## Odopnutie poznámky
+
+**URI**
+
+```
+http://localhost:8000/api/notes/{id}/unpin
+```
+
+Príklad:
+
+```
+http://localhost:8000/api/notes/2/unpin
+```
+![Unin note](images/patch_note_unpin.png)
 ---
 
 # Categories REST API – Laravel
@@ -194,10 +223,10 @@ http://localhost:8000/api/categories/{id}
 Príklad:
 
 ```
-http://localhost:8000/api/categories/8
+http://localhost:8000/api/categories/2
 ```
 
-![GET category](images/get_category_show.png)
+![GET category](images/get_categories_show.png)
 
 ---
 
@@ -209,13 +238,6 @@ http://localhost:8000/api/categories/8
 http://localhost:8000/api/categories
 ```
 
-**Body**
-
-```json
-{
-  "name": "Nová kategória"
-}
-```
 
 ![POST category](images/post_categories_store.png)
 
@@ -235,15 +257,7 @@ Príklad:
 http://localhost:8000/api/categories/2
 ```
 
-**Body**
-
-```json
-{
-  "name": "school"
-}
-```
-
-![PUT category](images/put_categories_update.png)
+![PUT category](images/patch_categories_update.png)
 
 ---
 
@@ -258,15 +272,13 @@ http://localhost:8000/api/categories/{id}
 Príklad:
 
 ```
-http://localhost:8000/api/categories/6
+http://localhost:8000/api/categories/2
 ```
 
 ![DELETE category](images/delete_categories_destroy.png)
 
 ---
 
-
----
 
 # Testovanie API
 
