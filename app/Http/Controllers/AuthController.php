@@ -83,7 +83,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required'],
-            'password' => ['required','confirmed']
+            'password' => ['required','confirmed', Password::min(12)->letters()->mixedCase()->numbers()->symbols()],
         ]);
 
         $user = $request->user();
@@ -100,14 +100,14 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Heslo bolo úspešne zmenené.'
-        ]);
+        ], Response::HTTP_OK);
     }
 
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => ['string','min:2','max:255'],
-            'last_name' => ['string','min:2','max:255'],
+            'first_name' => ['sometimes', 'string', 'min:2', 'max:128'],
+            'last_name' => ['sometimes', 'string', 'min:2', 'max:128'],
         ]);
 
         $user = $request->user();
@@ -117,7 +117,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Profil bol aktualizovaný.',
             'user' => $user
-        ]);
+        ], Response::HTTP_OK);
     }
 
 }
