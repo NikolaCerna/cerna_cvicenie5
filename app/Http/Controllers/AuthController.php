@@ -91,7 +91,7 @@ class AuthController extends Controller
         if (!Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'message' => 'Aktuálne heslo nie je správne.'
-            ], Response::HTTP_BAD_REQUEST);
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
         $user->update([
