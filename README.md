@@ -1,35 +1,19 @@
-NoteController - show
+Zmena hesla používateľa
 
-![popis](images/get_note_show.png)
+![popis](images/change_password.png)
 
-NoteController - show error
+Úprava profilu používateľa
 
-![popis](images/get_note_show_error.png)
+![popis](images/update_profile.png)
 
-CategoryController — store (duplicitný názov)
+Odhlásenie zo všetkých zariadení
 
-![popis](images/post_categories_store_duplicita.png)
+![popis](images/logout_all.png)
 
-CategoryController — store (chýbajúce pole)
+Bežný používateľ
 
-![popis](images/post_categoires_store_chybajucepole.png)
+![popis](images/no_admin_show.png)
 
-CategoryController — store (zlý formát farby)
+Pokus o mazanie kategórie bez admin práv
 
-![popis](images/post_categories_store_zlyformatfarby.png)
-
-CategoryController — show (neexistujúci záznam)
-
-![popis](images/get_categories_show_neexistujucizaznam.png)
-
-TaskController — index
-
-![popis](images/get_tasks_index.png)
-
-TaskController — store (zlý dátum a chýbajúci title)
-
-![popis](images/post_tasts_store_zlydatum_chybajucititle.png)
-
-TaskController — update
-
-![popis](images/put_tasks_update.png)
+![popis](images/no_admin_delete.png)
