@@ -13,11 +13,16 @@ class TaskController extends Controller
      */
     public function index(Note $note)
     {
+        // kto môže vidieť note, môže vidieť aj jej tasky
+        $this->authorize('view', [Task::class, $note]);
+
         $tasks = $note->tasks()
-            ->orderByDesc('created_at')
+            ->orderBy('created_at')
             ->get();
 
-        return response()->json(['tasks' => $tasks], Response::HTTP_OK);
+        return response()->json([
+            'tasks' => $tasks,
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -25,6 +30,7 @@ class TaskController extends Controller
      */
     public function store(Request $request, Note $note)
     {
+        $this->authorize('create', [Task::class, $note]);
         $validated = $request->validate([
             'title' => ['required','string','min:3','max:255'],
             'is_done' => ['sometimes','boolean'],
@@ -50,6 +56,7 @@ class TaskController extends Controller
                 'message' => 'Úloha nepatrí k tejto poznámke.'
             ], Response::HTTP_NOT_FOUND);
         }
+        $this->authorize('view', [Task::class, $note]);
 
         return response()->json([
             'task' => $task
@@ -61,6 +68,14 @@ class TaskController extends Controller
      */
     public function update(Request $request, Note $note, Task $task)
     {
+        if ($task->note_id !== $note->id) {
+            return response()->json([
+                'message' => 'Úloha nepatrí k tejto poznámke.'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->authorize('update', [Task::class, $note]);
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'is_done' => ['sometimes', 'boolean'],
@@ -114,6 +129,8 @@ class TaskController extends Controller
                 'message' => 'Úloha nepatrí k tejto poznámke.'
             ], Response::HTTP_NOT_FOUND);
         }
+
+        $this->authorize('delete', [Task::class, $note]);
 
         $task->delete();
 

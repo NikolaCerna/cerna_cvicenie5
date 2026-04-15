@@ -91,4 +91,10 @@ class Note extends Model
             ->get();
     }
 
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')
+            ->where('collection', 'attachment');
+    }
+
 }

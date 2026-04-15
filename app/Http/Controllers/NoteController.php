@@ -15,15 +15,37 @@ class NoteController extends Controller
 
     public function index()
     {
+        $this->authorize('viewAny', Note::class);
+
         $notes = Note::query()
             ->select(['id', 'user_id', 'title', 'body', 'status', 'is_pinned', 'created_at'])
             ->with([
                 'user:id,first_name,last_name',
                 'categories:id,name,color',
             ])
+            ->whereIn('status', ['published', 'archived'])
             ->orderByDesc('is_pinned')
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(5);
+
+        return response()->json([
+            'notes' => $notes,
+        ], Response::HTTP_OK);
+    }
+
+    public function myNotes(Request $request)
+    {
+        $this->authorize('viewAny', Note::class);
+
+        $notes = $request->user()
+            ->notes()
+            ->select(['id', 'user_id', 'title', 'body', 'status', 'is_pinned', 'created_at'])
+            ->with([
+                'categories:id,name,color',
+            ])
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('created_at')
+            ->paginate(5);
 
         return response()->json([
             'notes' => $notes,
@@ -36,9 +58,9 @@ class NoteController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+        $this->authorize('create', Note::class);
 
+        $validated = $request->validate([
             'title' => ['required', 'string', 'min:3', 'max:255'],
             'body'  => ['nullable', 'string'],
             'status' => ['sometimes', 'required', 'string', Rule::in(['draft', 'published', 'archived'])],
@@ -48,8 +70,16 @@ class NoteController extends Controller
             'categories.*' => ['integer', 'distinct', 'exists:categories,id'],
         ]);
 
-        $note = Note::create([
-            'user_id'   => $validated['user_id'],
+//        $note = Note::create([
+//            'user_id' => $request->user()->id,
+//            'title'     => $validated['title'],
+//            'body'      => $validated['body'] ?? null,
+//            'status'    => $validated['status'] ?? 'draft',
+//            'is_pinned' => $validated['is_pinned'] ?? false,
+//        ]);
+
+        // alebo lepšie riešenie, len potom odstráňte z fillable user_id...
+        $note = $request->user()->notes()->create([
             'title'     => $validated['title'],
             'body'      => $validated['body'] ?? null,
             'status'    => $validated['status'] ?? 'draft',
@@ -73,21 +103,9 @@ class NoteController extends Controller
      * Display the specified resource.
      */
 
-    public function show(string $id)
+    public function show(Note $note)
     {
-        $note = Note::with([
-            'user:id,first_name,last_name',
-            'categories:id,name,color',
-            'tasks',
-            'comments',
-            'tasks.comments',
-        ])->find($id);
-
-        if (!$note) {
-            return response()->json([
-                'message' => 'Poznámka nenájdená.'
-            ], Response::HTTP_NOT_FOUND);
-        }
+        $this->authorize('view', $note);
 
         return response()->json([
             'note' => $note
@@ -98,35 +116,44 @@ class NoteController extends Controller
      * Update the specified resource in storage.
      */
 
-    public function update(Request $request, string $id)
+    public function update(Request $request, Note $note)
     {
-        $note = Note::find($id);
+        $this->authorize('update', $note);
 
-        if (!$note) {
-            return response()->json(['message' => 'Poznámka nenájdená.'], Response::HTTP_NOT_FOUND);
-        }
-
-        $note->update([
-            'title' => $request->title,
-            'body' => $request->body,
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'body'  => ['nullable', 'string'],
+            'status' => ['sometimes', 'required', 'string', Rule::in(['draft', 'published', 'archived'])],
+            'is_pinned' => ['sometimes', 'boolean'],
+            'categories' => ['sometimes', 'array'],
+            'categories.*' => ['integer', 'distinct', 'exists:categories,id'],
         ]);
 
-        return response()->json(['note' => $note], Response::HTTP_OK);
+        $note->update($validated);
+
+        if (array_key_exists('categories', $validated)) {
+            $note->categories()->sync($validated['categories']);
+        }
+
+        return response()->json([
+            'message' => 'Poznámka bola aktualizovaná.',
+            'note' => $note->load([
+                'user:id,first_name,last_name',
+                'categories:id,name,color',
+            ]),
+        ], Response::HTTP_OK);
     }
 
     /**
      * Remove the specified resource from storage.
      */
 
-    public function destroy(string $id)
+    public function destroy(Note $note)
     {
-        $note = Note::find($id);
 
-        if (!$note) {
-            return response()->json(['message' => 'Poznámka nenájdená.'], Response::HTTP_NOT_FOUND);
-        }
+        $this->authorize('delete', $note);
 
-        $note->delete(); // soft delete
+        $note->delete();
 
         return response()->json(['message' => 'Poznámka bola úspešne odstránená.'], Response::HTTP_OK);
     }
@@ -135,6 +162,7 @@ class NoteController extends Controller
     // vlastné metódy - QB
     public function statsByStatus()
     {
+        $this->authorize('viewStats', Note::class);
         $stats = Note::select('status')
             ->selectRaw('COUNT(*) as count')
             ->groupBy('status')
@@ -146,6 +174,7 @@ class NoteController extends Controller
 
     public function archiveOldDrafts()
     {
+        $this->authorize('archiveDrafts', Note::class);
         $notes = Note::where('status', 'draft')
             ->where('updated_at', '<', now()->subDays(30))
             ->get();
@@ -164,6 +193,8 @@ class NoteController extends Controller
 
     public function userNotesWithCategories(string $userId)
     {
+        $this->authorize('viewUserNotes', [Note::class, $userId]);
+
         $notes = Note::where('user_id', $userId)
             ->orderByDesc('updated_at')
             ->get();
@@ -171,11 +202,8 @@ class NoteController extends Controller
         return response()->json(['notes' => $notes], Response::HTTP_OK);
     }
 
-    public function publish(string $id) {
-        $note = Note::find($id);
-        if (!$note) {
-            return response()->json(['message' => 'Poznámka nenájdená.'], Response::HTTP_NOT_FOUND);
-        }
+    public function publish(Note $note) {
+        $this->authorize('update', $note);
         $note->publish();
         return response()->json(
             ['note' => $note], Response::HTTP_OK);
@@ -183,6 +211,7 @@ class NoteController extends Controller
 
     public function search(Request $request)
     {
+        $this->authorize('viewAny', Note::class);
         $q = trim((string) $request->query('q', ''));
 
         $notes = Note::searchPublished($q);
@@ -190,26 +219,18 @@ class NoteController extends Controller
         return response()->json(['query' => $q, 'notes' => $notes], Response::HTTP_OK);
     }
 
-    public function pin(string $id)
+    public function pin(Note $note)
     {
-        $note = Note::find($id);
-
-        if (!$note) {
-            return response()->json(['message' => 'Poznámka nenájdená.'], Response::HTTP_NOT_FOUND);
-        }
+        $this->authorize('update', $note);
 
         $note->pin();
 
         return response()->json(['note' => $note], Response::HTTP_OK);
     }
 
-    public function unpin(string $id)
+    public function unpin(Note $note)
     {
-        $note = Note::find($id);
-
-        if (!$note) {
-            return response()->json(['message' => 'Poznámka nenájdená.'], Response::HTTP_NOT_FOUND);
-        }
+        $this->authorize('update', $note);
 
         $note->unpin();
 
@@ -218,6 +239,7 @@ class NoteController extends Controller
 
     public function pinnedNotes()
     {
+        $this->authorize('viewAny', Note::class);
         $notes = Note::where('is_pinned', true)
             ->orderByDesc('updated_at')
             ->get();
